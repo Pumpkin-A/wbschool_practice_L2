@@ -1,0 +1,8 @@
+github.com/Pumpkin-A/wbschool_practice_L2/devel/01_clock/wbtimer v0.0.0-20241224203500-ea9fec4416a7 h1:pzA0HllFOkJK4Bxi5JX1p8te9DduM3dA2l+wFEzjneo=
+github.com/Pumpkin-A/wbschool_practice_L2/devel/01_clock/wbtimer v0.0.0-20241224203500-ea9fec4416a7/go.mod h1:UqBnxALoKEUYrK+yEzpK1jE/z/rt1klon6xkXvUKJ3w=
+github.com/beevik/ntp v1.4.3 h1:PlbTvE5NNy4QHmA4Mg57n7mcFTmr1W1j3gcK7L1lqho=
+github.com/beevik/ntp v1.4.3/go.mod h1:Unr8Zg+2dRn7d8bHFuehIMSvvUYssHMxW3Q5Nx4RW5Q=
+golang.org/x/net v0.25.0 h1:d/OCCoBEUq33pjydKrGQhw7IlUPI2Oylr+8qLx49kac=
+golang.org/x/net v0.25.0/go.mod h1:JkAGAh7GEvH74S6FOH42FLoXpXbE/aqXSrIQjXgsiwM=
+golang.org/x/sys v0.20.0 h1:Od9JTbYCk261bKm4M/mw7AklTlFYIa0bIp9BgSm1S8Y=
+golang.org/x/sys v0.20.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
