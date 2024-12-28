@@ -6,14 +6,16 @@ import "fmt"
 // Для конкретных действий (создание записи в бд, запрос к бд) используются конкретные команды, это позволяет
 // скрыть реализацию бд от бизнес логики, избежать копирования кода (в случае, если в программе, например,
 // появится кэш, который так же будет посылать запросы в бд, когда кэш станет грязным)
+// Также есть возможность сохранять историю, так как все необходимые данные для выполнения команды хранятся в ней.
 
-type BusinessLogic struct {
-	command Command
-}
+// Так как в го есть "утиная типизация", то паттерн больше заключается в сохранении параметров функции в отдельной структуре
 
-func (b *BusinessLogic) request() {
-	b.command.execute()
-}
+// Плюсы: Позволяет реализовать простую отмену и повтор операций.
+//  Позволяет реализовать отложенный запуск операций.
+// Убирает прямую зависимость между объектами, вызывающими операции, и объектами, которые их непосредственно выполняют.
+// Реализует принцип открытости/закрытости.
+
+// Минусы: Усложняет код программы из-за введения множества дополнительных классов.
 
 type Command interface {
 	execute()
@@ -61,6 +63,7 @@ type DB interface {
 type AnyDB struct {
 }
 
+// методы записи и чтения объявляются только для конкретной бд и используются командами
 func (db *AnyDB) write(req string) error {
 	fmt.Printf("Данные успешно записаны в бд: %s\n", req)
 	return nil
@@ -72,15 +75,39 @@ func (db *AnyDB) read(req string) string {
 	return resp
 }
 
+type BusinessLogic struct {
+	db DB
+}
+
+func (b *BusinessLogic) writeRequest(recordingData string) {
+	writeCommand := NewWriteCommand(b.db, recordingData)
+	writeCommand.execute()
+}
+
+func (b *BusinessLogic) readRequest(req string) {
+	readCommand := NewReadCommand(b.db, req)
+	readCommand.execute()
+}
+
+type Cache struct {
+	db DB
+}
+
+func (b *Cache) writeRequest(recordingData string) {
+	writeCommand := NewWriteCommand(b.db, recordingData)
+	writeCommand.execute()
+}
+
+func (b *Cache) readRequest(req string) {
+	readCommand := NewReadCommand(b.db, req)
+	readCommand.execute()
+}
+
 func main() {
 	anyDB := &AnyDB{}
 
-	writeCommand := NewWriteCommand(anyDB, "newData")
-	businessLogic := &BusinessLogic{command: writeCommand}
-	businessLogic.command.execute()
+	businessLogic := &BusinessLogic{db: anyDB}
 
-	readCommand := NewReadCommand(anyDB, "getAnyData")
-	businessLogic.command = readCommand
-	businessLogic.command.execute()
-	fmt.Printf("resp: %s", readCommand.resp)
+	businessLogic.writeRequest("AAA")
+	businessLogic.readRequest("select * where id = 1234")
 }
