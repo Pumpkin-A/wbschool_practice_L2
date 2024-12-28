@@ -146,7 +146,7 @@ var wg = sync.WaitGroup{}
 func startCron(order *Order) {
 	c := cron.New()
 
-	c.AddFunc("@every 1s", func() {
+	_ = c.AddFunc("@every 1s", func() {
 		err := order.CreatePayment()
 		fmt.Printf("Текущее состояние заказа: %T\n", order.currentState)
 
