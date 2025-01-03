@@ -19,7 +19,7 @@ type codePair struct {
 	length int
 }
 
-func unpakcing(str string) (string, error) {
+func unpacking(str string) (string, error) {
 	var builder strings.Builder
 
 	index := 0
@@ -38,12 +38,12 @@ func unpakcing(str string) (string, error) {
 func getCodePair(str string, index int) (codePair, int, error) {
 	word, wordSize := utf8.DecodeRuneInString(str[index:])
 	if !unicode.IsLetter(word) && int(word) != backslashCode {
-		return codePair{}, 0, fmt.Errorf("not expexted %d %c", word, word)
+		return codePair{}, 0, fmt.Errorf("not expected %d %c", word, word)
 	}
 
-	if int(word) == 92 {
-		slashedWord, slashedwordSize := utf8.DecodeRuneInString(str[index+wordSize:])
-		return codePair{char: slashedWord, length: 1}, index + wordSize + slashedwordSize, nil
+	if int(word) == backslashCode {
+		slashedWord, slashedWordSize := utf8.DecodeRuneInString(str[index+wordSize:])
+		return codePair{char: slashedWord, length: 1}, index + wordSize + slashedWordSize, nil
 	}
 
 	indexNumberBegin := index + wordSize

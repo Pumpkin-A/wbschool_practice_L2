@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-func Test_unpakcing(t *testing.T) {
+func Test_unpacking(t *testing.T) {
 	type args struct {
 		str string
 	}
@@ -73,13 +73,13 @@ func Test_unpakcing(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := unpakcing(tt.args.str)
+			got, err := unpacking(tt.args.str)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("unpakcing() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("unpacking() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("unpakcing() = %v, want %v", got, tt.want)
+				t.Errorf("unpacking() = %v, want %v", got, tt.want)
 			}
 		})
 	}
