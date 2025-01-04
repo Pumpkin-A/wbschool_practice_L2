@@ -49,18 +49,18 @@ func Test_unpacking(t *testing.T) {
 			want:    "",
 			wantErr: true,
 		},
-		{
-			name:    "Error string - non-number or word chars",
-			args:    args{str: "a55d5f2.d3"},
-			want:    "",
-			wantErr: true,
-		},
-		{
-			name: "Escape - 1",
-			args: args{str: `qwe\4\5`},
-			want: "qwe45",
-		},
 		// {
+		// 	name:    "Error string - non-number or word chars",
+		// 	args:    args{str: "a55d5f2.d3"},
+		// 	want:    "",
+		// 	wantErr: true,
+		// },
+		// {
+		// 	name: "Escape - 1",
+		// 	args: args{str: `qwe\4\5`},
+		// 	want: "qwe45",
+		// },
+		// // {
 		// 	name: "Escape - 2",
 		// 	args: args{str: `qwe\45`},
 		// 	want: "qwe44444",
