@@ -13,10 +13,10 @@ func main() {
 }
 
 type unpacker struct {
-	ctxLetter rune
-	ctxLen    int
-	slash     bool
-	builder   strings.Builder
+	ctxLetter    rune
+	ctxLen       int
+	ctxBackslash bool
+	builder      strings.Builder
 }
 
 func newUnpacker() *unpacker {
@@ -25,9 +25,14 @@ func newUnpacker() *unpacker {
 	}
 }
 
+// naming!!
 func (u *unpacker) isCtxLetterEmpty() bool {
 	var empty rune
 	return u.ctxLetter == empty
+}
+
+func (u *unpacker) isCtxBackslash() bool {
+	return u.ctxBackslash
 }
 
 func (u *unpacker) updateCtxLetter(newChar rune) {
@@ -38,11 +43,15 @@ func (u *unpacker) updateCtxLen(newLen int) {
 	u.ctxLen = u.ctxLen*10 + newLen
 }
 
+func (u *unpacker) updateCtxBackslash() {
+	u.ctxBackslash = true
+}
+
 func (u *unpacker) resetCtx() {
 	var empty rune
 	u.ctxLetter = empty
 	u.ctxLen = 0
-	u.slash = false
+	u.ctxBackslash = false
 }
 
 // записывает контекст в итоговую строку указанное количество раз
@@ -63,18 +72,45 @@ func (u *unpacker) lettersHandler(r rune) error {
 	// После обработки записываем в контекст новый символ
 	if !u.isCtxLetterEmpty() {
 		u.writeCtxToString()
+	} else if u.isCtxBackslash() {
+		return fmt.Errorf("incorrect string: unused backslash")
 	}
 	u.updateCtxLetter(r)
 	return nil
 }
 
-func (u *unpacker) digitsHandler(len int) error {
-	// если контекст пуст - ошибка (строка начинается с цифры - некорректная строка)
+func (u *unpacker) digitsHandler(len rune) error {
+	// если контекст пуст и не включен контекст слэша - ошибка (нет символов для повтора)
+	// если контекст слэша включен, значит цифра - символ для обработки
 	if u.isCtxLetterEmpty() {
+		if u.isCtxBackslash() {
+			u.updateCtxLetter(len)
+			return nil
+		}
 		return fmt.Errorf("incorrect string")
 	}
 	// встретили очередную цифру в строке - обновляем длину (это длина символа, который сейчас в контексте)
-	u.updateCtxLen(len)
+	u.updateCtxLen(int(len - '0'))
+	return nil
+}
+
+func (u *unpacker) backslashHandler() error {
+	// если контекст слэша включен и символа для обработки нет - слэш и есть символ для обработки
+	// если контекст слэша включен и контекст символа заполнен - значит записываем накопленный контекст в итоговую строку
+	if u.isCtxBackslash() {
+		if u.isCtxLetterEmpty() {
+			u.updateCtxLetter(rune(backslashCode))
+			return nil
+		}
+		u.writeCtxToString()
+		u.updateCtxBackslash()
+		return nil
+	}
+
+	if !u.isCtxLetterEmpty() {
+		u.writeCtxToString()
+	}
+	u.updateCtxBackslash()
 	return nil
 }
 
@@ -86,77 +122,34 @@ func unpacking(str string) (string, error) {
 	for _, v := range runes {
 		if unicode.IsDigit(v) {
 			// обработчик, когда встречаем число
-			err := unpacker.digitsHandler(int(v - '0'))
+			err := unpacker.digitsHandler(v)
+			if err != nil {
+				return "", err
+			}
+			continue
+		} else if int(v) == backslashCode {
+			// обработчик после слэша
+			err := unpacker.backslashHandler()
 			if err != nil {
 				return "", err
 			}
 			continue
 		}
-		// else if int(v) == backslashCode {
-		// 	// обработчик после слэша
-		// 	continue
-		// }
 
 		err := unpacker.lettersHandler(v)
 		if err != nil {
 			return "", err
 		}
-		// обработка для букв и иных символов
+
 	}
 
+	//обработка накопленного контекста после завершения строки
 	if !unpacker.isCtxLetterEmpty() {
 		unpacker.writeCtxToString()
+	} else if unpacker.ctxBackslash {
+		return "", fmt.Errorf("incorrect string: unused backslash")
 	}
+
 	fmt.Println(unpacker.builder.String())
 	return unpacker.builder.String(), nil
 }
-
-// func unpacking(str string) (string, error) {
-// 	var builder strings.Builder
-
-// 	index := 0
-// 	runes := []rune(str)
-// 	for index < len(runes) {
-// 		pair, nextIndex, err := getCodePair(runes, index)
-// 		if err != nil {
-// 			return "", err
-// 		}
-// 		builder.WriteString(strings.Repeat(string(pair.char), pair.length))
-// 		fmt.Println(builder.String())
-// 		index = nextIndex
-// 	}
-
-// 	return builder.String(), nil
-// }
-
-// getPair {
-// word, wordSize := utf8.DecodeRuneInString(str[index:])
-// if !unicode.IsLetter(word) && int(word) != backslashCode {
-// 	return codePair{}, 0, fmt.Errorf("not expected %d %c", word, word)
-// }
-
-// if int(word) == backslashCode {
-// 	slashedWord, slashedWordSize := utf8.DecodeRuneInString(str[index+wordSize:])
-// 	return codePair{char: slashedWord, length: 1}, index + wordSize + slashedWordSize, nil
-// }
-
-// indexNumberBegin := index + wordSize
-// indexNumberEnd := strings.IndexFunc(str[indexNumberBegin:], func(r rune) bool {
-// 	return !unicode.IsDigit(r)
-// })
-// if indexNumberEnd == -1 {
-// 	indexNumberEnd = len(str)
-// } else {
-// 	indexNumberEnd = indexNumberBegin + indexNumberEnd
-// }
-// if indexNumberBegin == indexNumberEnd {
-// 	return codePair{char: word, length: 1}, indexNumberEnd, nil
-// }
-
-// number, err := strconv.Atoi(str[indexNumberBegin:indexNumberEnd])
-// if err != nil {
-// 	return codePair{}, 0, err
-// }
-
-// return codePair{char: word, length: number}, indexNumberEnd, nil
-// }

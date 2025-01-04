@@ -49,27 +49,49 @@ func Test_unpacking(t *testing.T) {
 			want:    "",
 			wantErr: true,
 		},
-		// {
-		// 	name:    "Error string - non-number or word chars",
-		// 	args:    args{str: "a55d5f2.d3"},
-		// 	want:    "",
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Escape - 1",
-		// 	args: args{str: `qwe\4\5`},
-		// 	want: "qwe45",
-		// },
-		// // {
-		// 	name: "Escape - 2",
-		// 	args: args{str: `qwe\45`},
-		// 	want: "qwe44444",
-		// },
-		// {
-		// 	name: "Escape - 3",
-		// 	args: args{str: `qwe\\5`},
-		// 	want: `qwe\\\\\`,
-		// },
+		{
+			name: "non-number or word chars",
+			args: args{str: "a5d5f2.3d"},
+			want: "aaaaadddddff...d",
+		},
+		{
+			name: "Escape - 1",
+			args: args{str: `qwe\4\5`},
+			want: "qwe45",
+		},
+		{
+			name: "Escape - 2",
+			args: args{str: `qwe\45`},
+			want: "qwe44444",
+		},
+		{
+			name: "Escape - 3",
+			args: args{str: `qwe\\5`},
+			want: `qwe\\\\\`,
+		},
+		{
+			name:    "Escape - 4",
+			args:    args{str: `qwe\`},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name:    "Escape - 5",
+			args:    args{str: `\\\`},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Escape - 6",
+			args: args{str: `\\\\a`},
+			want: `\\a`,
+		},
+		{
+			name:    "Escape - 7",
+			args:    args{str: `\f`},
+			want:    "",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
