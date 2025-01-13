@@ -112,15 +112,9 @@ func Test_doSort_numeric(t *testing.T) {
 	baseDouble = append(baseDouble, base...)
 	baseDouble = append(baseDouble, base...)
 
-	// out, err := exec.Command("sort", "-r", "file.txt").Output()
-	// fmt.Println("Out:", out, err)
-	// k2 := strings.Split(string(out), string(rune(13))+string(rune(10)))
-	// out, _ = exec.Command("sort", "file.txt").Output()
-	// k1 := strings.Split(string(out), string(rune(13))+string(rune(10)))
-
 	type args struct {
 		data   []string
-		params parametres
+		params parameters
 	}
 	tests := []struct {
 		name string
@@ -129,7 +123,7 @@ func Test_doSort_numeric(t *testing.T) {
 	}{
 		{
 			name: "k1",
-			args: args{data: base, params: parametres{column: 1, byNumeric: false, isReverse: false, isUnique: false}},
+			args: args{data: base, params: parameters{column: 1, byNumeric: false, isReverse: false, isUnique: false}},
 			want: []string{
 				"abhishek 44",
 				"divyam 11",
@@ -142,7 +136,7 @@ func Test_doSort_numeric(t *testing.T) {
 		},
 		{
 			name: "k2",
-			args: args{data: base, params: parametres{column: 2, byNumeric: false, isReverse: false, isUnique: false}},
+			args: args{data: base, params: parameters{column: 2, byNumeric: false, isReverse: false, isUnique: false}},
 			want: []string{
 				"harsh",
 				"satish 1",
@@ -155,7 +149,7 @@ func Test_doSort_numeric(t *testing.T) {
 		},
 		{
 			name: "k3",
-			args: args{data: base, params: parametres{column: 3, byNumeric: false, isReverse: false, isUnique: false}},
+			args: args{data: base, params: parameters{column: 3, byNumeric: false, isReverse: false, isUnique: false}},
 			want: []string{
 				"abhishek 44",
 				"divyam 11",
@@ -168,7 +162,7 @@ func Test_doSort_numeric(t *testing.T) {
 		},
 		{
 			name: "k1 reversed",
-			args: args{data: base, params: parametres{column: 1, byNumeric: false, isReverse: true, isUnique: false}},
+			args: args{data: base, params: parameters{column: 1, byNumeric: false, isReverse: true, isUnique: false}},
 			want: []string{
 				"zvisehn 6",
 				"satish 1",
@@ -181,7 +175,7 @@ func Test_doSort_numeric(t *testing.T) {
 		},
 		{
 			name: "k1 numeric",
-			args: args{data: base, params: parametres{column: 1, byNumeric: true, isReverse: false, isUnique: false}},
+			args: args{data: base, params: parameters{column: 1, byNumeric: true, isReverse: false, isUnique: false}},
 			want: []string{
 				"abhishek 44",
 				"divyam 11",
@@ -194,7 +188,7 @@ func Test_doSort_numeric(t *testing.T) {
 		},
 		{
 			name: "k2 numeric",
-			args: args{data: base, params: parametres{column: 2, byNumeric: true, isReverse: false, isUnique: false}},
+			args: args{data: base, params: parameters{column: 2, byNumeric: true, isReverse: false, isUnique: false}},
 			want: []string{
 				"harsh",
 				"satish 1",
@@ -207,7 +201,7 @@ func Test_doSort_numeric(t *testing.T) {
 		},
 		{
 			name: "k2 numeric reversed",
-			args: args{data: base, params: parametres{column: 2, byNumeric: true, isReverse: true, isUnique: false}},
+			args: args{data: base, params: parameters{column: 2, byNumeric: true, isReverse: true, isUnique: false}},
 			want: []string{
 				"abhishek 44",
 				"rajan 22",
@@ -220,7 +214,7 @@ func Test_doSort_numeric(t *testing.T) {
 		},
 		{
 			name: "k1 unique",
-			args: args{data: baseDouble, params: parametres{column: 1, byNumeric: false, isReverse: false, isUnique: true}},
+			args: args{data: baseDouble, params: parameters{column: 1, byNumeric: false, isReverse: false, isUnique: true}},
 			want: []string{
 				"abhishek 44",
 				"divyam 11",

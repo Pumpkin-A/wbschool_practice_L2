@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type parametres struct {
+type parameters struct {
 	column    int
 	byNumeric bool
 	isReverse bool
@@ -19,30 +19,16 @@ type parametres struct {
 	filenames []string
 }
 
-var params parametres
+var params parameters
 
-func main() {
-	params = parseArgsIntoParams()
-	data, err := readDataFromFiles(params.filenames)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	data = doSort(data, params)
-	for _, str := range data {
-		fmt.Println(str)
-	}
-
-}
-
-func parseArgsIntoParams() parametres {
+func parseArgsIntoParams() parameters {
 	colNum := flag.Int("k", 1, "Number of column to sort")
 	byNum := flag.Bool("n", false, "Numeric compare")
 	isUn := flag.Bool("u", false, "Unique strings")
 	isRev := flag.Bool("r", false, "Reverse order")
 	flag.Parse()
 
-	params := parametres{
+	params := parameters{
 		column:    *colNum,
 		byNumeric: *byNum,
 		isReverse: *isRev,
@@ -53,6 +39,7 @@ func parseArgsIntoParams() parametres {
 	return params
 }
 
+// readDataFromFiles поддерживает чтение из нескольких файлов, указанных в параметрах, по аналогии с консольной утилитой sort
 func readDataFromFiles(filenames []string) ([]string, error) {
 	readDataFromFile := func(name string) ([]string, error) {
 		file, err := os.Open(name)
@@ -84,25 +71,28 @@ func readDataFromFiles(filenames []string) ([]string, error) {
 	return data, nil
 }
 
-func doSort(data []string, params parametres) []string {
+func compareAsNumbers(lhs, rhs string) bool {
+	lnum, lerr := strconv.Atoi(lhs)
+	rnum, rerr := strconv.Atoi(rhs)
+
+	//сравниваем как обычные строки
+	if lerr != nil && rerr != nil {
+		return lhs < rhs
+	}
+	// строки без числовых значений в указанной колонке выводятся в самом конце
+	if lerr != nil || rerr != nil {
+		return lerr == nil
+	}
+	return lnum < rnum
+}
+
+func compareAsStrings(lhs, rhs string) bool {
+	return lhs < rhs
+}
+
+func doSort(data []string, params parameters) []string {
 	if params.isUnique {
 		data = makeStringsUnique(data)
-	}
-
-	compareAsNumbers := func(lhs, rhs string) bool {
-		lnum, lerr := strconv.Atoi(lhs)
-		rnum, rerr := strconv.Atoi(rhs)
-
-		if lerr != nil && rerr != nil {
-			return lhs < rhs
-		}
-		if lerr != nil || rerr != nil {
-			return lerr == nil
-		}
-		return lnum < rnum
-	}
-	compareAsStrings := func(lhs, rhs string) bool {
-		return lhs < rhs
 	}
 
 	var valueComparator func(string, string) bool
@@ -112,6 +102,9 @@ func doSort(data []string, params parametres) []string {
 		valueComparator = compareAsStrings
 	}
 
+	// логика сравнения:
+	// осуществляется проверка существования указанной колонки, сначала выводятся строки, у которых ее не существует,
+	// сравниваются по дефолтной первой. Функция сравнения определяется в зависимости от наличия ключа -n
 	compareLogic := func(i, j int) bool {
 		lhs := strings.Split(data[i], " ")
 		rhs := strings.Split(data[j], " ")
@@ -135,6 +128,7 @@ func doSort(data []string, params parametres) []string {
 		if len(lhs) >= params.column && len(rhs) >= params.column {
 			return valueComparator(lhs[params.column-1], rhs[params.column-1])
 		}
+		// Ошибка логики программы. Используется именно паника, так как это скрипт, здесь можно просто выйти из программы
 		panic("DEBUG: code should not run here")
 	}
 
@@ -160,4 +154,19 @@ func makeStringsUnique(strs []string) []string {
 		}
 	}
 	return newData
+}
+
+func main() {
+	// пример ввода параметров: go run main.go -k 2 -n file.txt numeric.txt
+	// в данном примере произойдет сортировка данных из двух файлов с параметрами: числовая сортировка данных второй колонки
+	params = parseArgsIntoParams()
+	data, err := readDataFromFiles(params.filenames)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	data = doSort(data, params)
+	for _, str := range data {
+		fmt.Println(str)
+	}
 }
