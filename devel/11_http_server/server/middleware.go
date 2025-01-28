@@ -1,4 +1,4 @@
-package mymain
+package server
 
 import (
 	"fmt"

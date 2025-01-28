@@ -28,7 +28,7 @@ func readFileOrPanic(filename string) []string {
 	return lines
 }
 
-func Test_doGrep(t *testing.T) {
+func Test_doCut(t *testing.T) {
 	type args struct {
 		data   []string
 		params parametres
@@ -62,6 +62,7 @@ func Test_doGrep(t *testing.T) {
 			},
 			wantOut: strings.Join(readFileOrPanic("file_ans_3.txt"), "\n"),
 		},
+		// не все кейсы обработаны корректно...
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

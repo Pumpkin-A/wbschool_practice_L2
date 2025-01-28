@@ -29,7 +29,7 @@ var params parametres
 
 func main() {
 	params = parseArgsIntoParams()
-	data, err := readDataFromFile(params.filename)
+	data, err := readData(params.filename)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -74,33 +74,22 @@ func parseArgsIntoParams() parametres {
 	return params
 }
 
-func readDataFromFile(name string) ([]string, error) {
-	file, err := os.Open(name)
-	if err != nil {
-		return []string{}, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	lines := []string{}
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		return []string{}, err
-	}
-	return lines, nil
-}
-
 func doGrep(data []string, params parametres, out io.Writer) {
+	// Находим нужные индексы строк для вывода
 	indices := findIndices(data, params)
 
-	if params.toCount {
+	// добавляем строки сверху/снизу по ключам -A -B -C
+	indices = addAreaIndices(indices, params, len(data))
+
+	// Выводим результат
+	printResult(data, indices, out, params.toCount)
+}
+
+func printResult(data []string, indices []int, out io.Writer, isCountNeed bool) {
+	if isCountNeed {
 		fmt.Fprintf(out, "%d\n", len(indices))
 		return
 	}
-
-	indices = addAreaIndices(indices, params, len(data))
 
 	for i, index := range indices {
 		if i != len(indices)-1 {
@@ -111,6 +100,28 @@ func doGrep(data []string, params parametres, out io.Writer) {
 	}
 }
 
+// проверяем за счёт текста
+func checkByRaw(checked string) bool {
+	var ans bool
+	if params.ignoreCase {
+		ans = strings.Contains(strings.ToLower(checked), strings.ToLower(params.pattern))
+	} else {
+		ans = strings.Contains(checked, params.pattern)
+	}
+	return ans
+}
+
+// проверяем на счёт регекса
+func checkByRegex(checked string) bool {
+	var ans bool
+	pattern := params.pattern
+	if params.ignoreCase {
+		pattern = "(?i)" + pattern
+	}
+	ans, _ = regexp.MatchString(pattern, checked)
+	return ans
+}
+
 func findIndices(data []string, params parametres) []int {
 	var indices []int
 
@@ -119,26 +130,6 @@ func findIndices(data []string, params parametres) []int {
 			return !v
 		}
 		return v
-	}
-
-	checkByRegex := func(checked string) bool {
-		var ans bool
-		pattern := params.pattern
-		if params.ignoreCase {
-			pattern = "(?i)" + pattern
-		}
-		ans, _ = regexp.MatchString(pattern, checked)
-		return ans
-	}
-
-	checkByRaw := func(checked string) bool {
-		var ans bool
-		if params.ignoreCase {
-			ans = strings.Contains(strings.ToLower(checked), strings.ToLower(params.pattern))
-		} else {
-			ans = strings.Contains(checked, params.pattern)
-		}
-		return ans
 	}
 
 	var checker func(string) bool
@@ -188,4 +179,27 @@ func addAreaIndices(inds []int, params parametres, maxIndex int) []int {
 	sort.Ints(newIndices)
 
 	return newIndices
+}
+
+func readData(filename string) ([]string, error) {
+	var input io.Reader
+	if filename == "" {
+		input = os.Stdin
+	} else {
+		file, err := os.Open(filename)
+		if err != nil {
+			return []string{}, err
+		}
+		defer file.Close()
+	}
+
+	scanner := bufio.NewScanner(input)
+	lines := []string{}
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return []string{}, err
+	}
+	return lines, nil
 }

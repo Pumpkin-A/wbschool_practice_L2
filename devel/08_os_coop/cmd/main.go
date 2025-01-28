@@ -11,13 +11,13 @@ import (
 	"strings"
 )
 
-func usage() {
-	log.Printf("CommandsL cd, pwd, echo, kill, ps, exit")
+func printUsageHelp() {
+	log.Printf("Commands: cd, pwd, echo, kill, ps, exit")
 	flag.PrintDefaults()
 }
 
 func showUsageAndExit(exitcode int) {
-	usage()
+	printUsageHelp()
 	os.Exit(exitcode)
 }
 
@@ -25,13 +25,14 @@ func main() {
 	var showHelp = flag.Bool("h", false, "Show help message")
 
 	log.SetFlags(0)
-	flag.Usage = usage
+	flag.Usage = printUsageHelp
 	flag.Parse()
 
 	if *showHelp {
 		showUsageAndExit(0)
 	}
 
+	// Печатем приглашение к вводу и ожидаем строчки от пользователя
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Print("$ ")
@@ -47,6 +48,7 @@ func main() {
 }
 
 func execInput(input string) error {
+	// На винде небходимо чистить ввод от символов
 	input = strings.TrimSuffix(input, "\n")
 	input = strings.TrimSuffix(input, "\r")
 	input = strings.TrimPrefix(input, "\r")
@@ -55,10 +57,11 @@ func execInput(input string) error {
 	args := strings.Split(input, " ")
 	fmt.Println(args)
 
+	// Команду изменения директории необходимо спарсить и преобразовать
 	switch args[0] {
 	case "cd":
-		if len(args) < 2 {
-			return errors.New("path required")
+		if len(args) != 2 {
+			return errors.New("one directory path is required")
 		}
 		return os.Chdir(args[1])
 	case "exit":

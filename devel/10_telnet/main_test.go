@@ -8,7 +8,7 @@ import (
 )
 
 func TestTelnetClient(t *testing.T) {
-	t.Run("defaule", func(t *testing.T) {
+	t.Run("lcoal", func(t *testing.T) {
 		l, _ := net.Listen("tcp", "127.0.0.1:")
 		defer l.Close()
 
@@ -47,6 +47,20 @@ func TestTelnetClient(t *testing.T) {
 		}()
 
 		wg.Wait()
+	})
+
+	t.Run("to web server", func(t *testing.T) {
+		client := NewTelnetClient("telehack.com:23", time.Second*2)
+		if err := client.initConnection(); err != nil {
+			t.Error(err.Error())
+		}
+	})
+
+	t.Run("to web server", func(t *testing.T) {
+		client := NewTelnetClient("freechess.org:5000", time.Second*2)
+		if err := client.initConnection(); err != nil {
+			t.Error(err.Error())
+		}
 	})
 
 	t.Run("should return error when connect to wrong host", func(t *testing.T) {

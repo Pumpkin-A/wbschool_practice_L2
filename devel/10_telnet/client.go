@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-// TelnetClient do basic support of sending and receiving via telnet
 type TelnetClient struct {
 	address    string
 	timeout    time.Duration
@@ -16,7 +15,6 @@ type TelnetClient struct {
 	connReader *bufio.Reader
 }
 
-// NewTelnetClient creates instance of TelnetClient
 func NewTelnetClient(address string, timeout time.Duration) *TelnetClient {
 	res := &TelnetClient{
 		address: address,
@@ -44,7 +42,7 @@ func (t *TelnetClient) receieveMsg() error {
 	line, err := t.connReader.ReadString('\n')
 	if err != nil {
 		if err == io.EOF {
-			err = fmt.Errorf("error: closed by peer")
+			err = fmt.Errorf("error: unexpected answer from server")
 		}
 		return err
 	}

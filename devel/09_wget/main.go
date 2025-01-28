@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime"
 	"net/http"
 	"net/url"
@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	// uri := "https://sun9-7.userapi.com/impg/P5qwKdi3VEJvVXv6KvTrTs4ij9s9hHeyAMWr6w/d0lgFdt9UOY.jpg?size=806x1080&quality=96&sign=8d98653ac22de3ebf2b2f7864776df88&type=album"
+	// uri := "https://sun9-74.userapi.com/impg/EJoWbiBxQ4MmPXCcvtTGaAutkTnl3UGkO8_7gg/uouvsFrnkNE.jpg?size=1266x1583&quality=95&sign=5440a5d4cb91e3925784f2b1e389987f&type=album"
 	// uri := "http://example.com/download.mp4"
 	// uri := "https://www.iana.org/domains/reserved"
 
@@ -24,16 +24,22 @@ func main() {
 	}
 	uri := os.Args[1]
 	c := newDownloadCounter()
-	c.download(uri, 1)
+	if err := c.download(uri, 1); err != nil {
+		fmt.Println("err found")
+	}
 }
 
 type counter struct {
+	// Т.к. Names - разделяемый ресурс между горутинами, то синхронизируем доступ через мьютекс
 	names map[string]struct{}
 	m     *sync.Mutex
 }
 
 func newDownloadCounter() *counter {
-	return &counter{names: make(map[string]struct{}), m: &sync.Mutex{}}
+	return &counter{
+		names: make(map[string]struct{}),
+		m:     &sync.Mutex{},
+	}
 }
 
 func (c *counter) isNew(uri string) bool {
@@ -46,39 +52,45 @@ func (c *counter) isNew(uri string) bool {
 	return true
 }
 
-func (c *counter) download(uri string, maxLevel int) {
+// Основной метод работы
+// - загружает данные
+// - ищет ссылки в скачанных данных
+// - скачивает данные по найденным ссылкам в горутнах
+func (c *counter) download(uri string, maxLevel int) error {
 	if maxLevel < 0 {
-		return
+		return fmt.Errorf("maxlevel error")
 	}
-	if _, e := url.ParseRequestURI(uri); e != nil {
-		return
+	if _, err := url.ParseRequestURI(uri); err != nil {
+		return err
 	}
 	fmt.Println("dowload: ", uri, maxLevel)
 
 	if !c.isNew(uri) {
-		return
+		return nil
 	}
 
 	res, err := http.Get(uri)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 
 	}
 	defer res.Body.Close()
-	data, err := ioutil.ReadAll(res.Body)
+	data, err := io.ReadAll(res.Body)
 	if err != nil {
-		return
+		return err
 	}
 
 	filename := parseFilename(uri, res.Header)
 	out, err := os.Create(filename)
 	if err != nil {
-		return
+		return err
 	}
 	defer out.Close()
 
-	out.Write(data)
+	if _, err := out.Write(data); err != nil {
+		return err
+	}
 
 	links := getSubLinks(data)
 	var wg sync.WaitGroup
@@ -90,9 +102,12 @@ func (c *counter) download(uri string, maxLevel int) {
 		}(sublink)
 	}
 	wg.Wait()
+
+	return nil
 }
 
 func getSubLinks(data []byte) []string {
+	// Вроде бы работает такой регекс для поиска ссылок
 	re := regexp.MustCompile(`(http|https):\/\/([\w\-_]+(?:(?:\.[\w\-_]+)+))([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?`)
 	result := re.FindAll(data, -1)
 
@@ -101,6 +116,17 @@ func getSubLinks(data []byte) []string {
 		subUris = append(subUris, string(result[i]))
 	}
 	return subUris
+}
+
+// Создаем имя файла из ссылки медиа-данных о формате файла, чтобы его имя подходило и был правильный формат файла
+func parseFilename(uri string, header http.Header) string {
+	contentType := header.Get("Content-Type")
+	mimeType, _, _ := mime.ParseMediaType(contentType)
+	mediaType := cutBefore(mimeType, "/")
+
+	filename := getFilename(uri, mediaType)
+
+	return filename
 }
 
 func getFilename(url string, mediaType string) string {
@@ -116,16 +142,6 @@ func getFilename(url string, mediaType string) string {
 	}
 
 	return name
-}
-
-func parseFilename(uri string, header http.Header) string {
-	contentType := header.Get("Content-Type")
-	mimeType, _, _ := mime.ParseMediaType(contentType)
-	mediaType := cutBefore(mimeType, "/")
-
-	filename := getFilename(uri, mediaType)
-
-	return filename
 }
 
 func cutAfter(s, sep string) string {

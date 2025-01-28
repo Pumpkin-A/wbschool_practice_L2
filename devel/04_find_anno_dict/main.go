@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-
+	// тестируем через тестовые случаи
 }
 
 func newAnnoDict(words []string) map[string][]string {

@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"sort"
 	"strconv"
@@ -21,15 +20,17 @@ type parametres struct {
 }
 
 func main() {
+	// Парсим входные аргументы
 	params, err := parseArgsIntoParams()
 	if err != nil {
-		fmt.Println("Invalid arg!", err)
+		fmt.Println("Invalid arg!", err.Error())
 		return
 	}
 
-	data, err := readDataFromFile(params.filename)
+	data, err := readData(params.filename)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println("input error: ", err.Error())
+		return
 	}
 
 	doCut(data, params, os.Stdout)
@@ -42,11 +43,13 @@ func parseArgsIntoParams() (parametres, error) {
 
 	flag.Parse()
 
+	// Для флага -f нужно извлечь допонительные данные
+	// Сразу же проверяем уникальность параметров от пользователя
 	uniqueColumns := make(map[int]struct{})
 	for _, column := range strings.Split(*fields, " ") {
 		num, err := strconv.Atoi(column)
 		if err != nil {
-			return parametres{}, err
+			return parametres{}, fmt.Errorf("column -f error")
 		}
 		if num < 1 {
 			return parametres{}, fmt.Errorf("Field must be at least 1.")
@@ -59,31 +62,38 @@ func parseArgsIntoParams() (parametres, error) {
 	}
 	sort.Ints(columns)
 
+	// проверяем, что введён один символ
 	if len(*delim) != 1 {
 		return parametres{}, fmt.Errorf("Delim should be with size 1")
 	}
-	if len(flag.Args()) != 1 {
-		return parametres{}, fmt.Errorf("Filename should be provided")
+	var filename string
+	if len(flag.Args()) == 1 {
+		filename = flag.Args()[0]
 	}
 
 	params := parametres{
 		fields:        columns,
 		delim:         *delim,
 		withDelimOnly: *isSep,
-		filename:      flag.Args()[0],
+		filename:      filename,
 	}
 
 	return params, nil
 }
 
-func readDataFromFile(name string) ([]string, error) {
-	file, err := os.Open(name)
-	if err != nil {
-		return []string{}, err
+func readData(filename string) ([]string, error) {
+	var input io.Reader
+	if filename == "" {
+		input = os.Stdin
+	} else {
+		file, err := os.Open(filename)
+		if err != nil {
+			return []string{}, err
+		}
+		defer file.Close()
 	}
-	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(input)
 	lines := []string{}
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())

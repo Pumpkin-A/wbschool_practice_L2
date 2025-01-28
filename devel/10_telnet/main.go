@@ -26,20 +26,25 @@ func getDataFromUser() (string, time.Duration) {
 }
 
 func main() {
+	// Инициализируем нашего клиента переденными флагами из командной строки
 	client := NewTelnetClient(getDataFromUser())
 	if err := client.initConnection(); err != nil {
 		log.Fatalf("error while connecting %v", err)
 	}
+	// Откладываем закрытие соединения
 	defer func() {
 		if err := client.closeConnection(); err != nil {
 			log.Fatalf("error while closing conn")
 		}
+		fmt.Println("conn socket closed")
 	}()
 
+	// Создаем перехватчк завершения работы программы
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	errors := make(chan error, 1)
 
+	// Создаем горутину для чтения данных из сокета соединения telnet
 	go func() {
 		for {
 			err := client.receieveMsg()
@@ -48,10 +53,12 @@ func main() {
 				return
 			}
 		}
+		// В случае ошибок - отправляем ошибку в канал ошибок и выходим из горутины
 	}()
 
+	// Создаем горутину для чтения данных из консоли (STDIN)
 	go func() {
-		// Чтобы ловить EOF
+		// Обрабатываем ввод данных из STDIN до нажатия enter
 		inputReader := bufio.NewReader(os.Stdin)
 		for {
 			line, err := inputReader.ReadString('\n')
@@ -64,25 +71,22 @@ func main() {
 				return
 			}
 		}
+		// В случае ошибок - отправляем ошибку в канал ошибок и выходим из горутины
 	}()
 
-	closed := make(chan interface{})
-	go func() {
-		defer close(closed)
-		for {
-			select {
-			case <-signals:
+	// Запускаем select в цикле, который отслеживает завершающие сигналы от ОС и наличие ошибок в канале
+	// При получения любого из них завершает программу, закрывая сокет соединения с сервером в верхнем defer
+	for {
+		select {
+		case <-signals:
+			return
+		case err := <-errors:
+			fmt.Println("Error from client: ", err.Error())
+			if err != nil {
 				return
-			case err := <-errors:
-				fmt.Println(err)
-				if err != nil {
-					return
-				}
-			default:
-				continue
 			}
+		default:
+			continue
 		}
-	}()
-
-	<-closed
+	}
 }
