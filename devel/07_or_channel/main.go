@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -31,6 +32,7 @@ func main() {
 func or(chans ...<-chan interface{}) <-chan interface{} {
 	// Создаем новый канал, в который будем сливать любое количество пришедших каналов
 	orChan := make(chan interface{})
+	var once sync.Once
 
 	// Запускаем горутины дял каждого канала, которые ожидают их закрытия
 	for i := 0; i < len(chans); i++ {
@@ -45,7 +47,12 @@ func or(chans ...<-chan interface{}) <-chan interface{} {
 				// При закрытия любого из них - закрываем новый канал
 				case _, isOpen := <-waitForClose:
 					if !isOpen {
-						close(orChan)
+						// Из-за рандомного характера обхода select, существует маленькая вероятность, что какая-то горутина
+						// обработает данный case, когда orChan уже будет закрыт
+						// Использование sync.Once необходимо, чтобы гарантированно закрывать канал только один раз
+						once.Do(func() {
+							close(orChan)
+						})
 						return
 					}
 				}
